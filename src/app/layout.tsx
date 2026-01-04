@@ -3,7 +3,7 @@ import "./globals.css";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import ClientProviders from "./ClientProviders";
-import Head from "next/head"; // Import Head
+import { Toaster } from "@/components/ui/toaster";
 import { Metadata } from "next";
 
 const poppins = Poppins({
@@ -11,45 +11,51 @@ const poppins = Poppins({
   weight: ["400", "600", "700"],
 });
 
-export const metadata : Metadata = {
+export const metadata: Metadata = {
   title: "Shahsawaar | Men's Jewellery",
   description: "Where Royalty Meets Refinement",
   icons: {
-    icon: "/favicon.ico",
+    icon: [
+      { url: '/site-icon.ico' },
+      { url: '/site-icon.ico?v=2', type: 'image/x-icon' }, // cache buster
+    ],
+    shortcut: '/site-icon.ico',
+    apple: '/apple-touch-icon.png',
   },
+  openGraph: {
+    title: "Shahsawaar Official",
+    description: "Men's Jewellery & Accessories",
+    url: "https://shahsawaarofficial.store",
+    siteName: "Shahsawaar Official",
+    images: [
+      {
+        url: "/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: "Shahsawaar Official",
+      },
+    ],
+    locale: "en_US",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Shahsawaar Official",
+    description: "Men's Jewellery & Accessories",
+    images: ["/og-image.png"],
+  },
+  metadataBase: new URL("https://shahsawaarofficial.store"),
 };
-
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <Head>
-        {/* Favicon */}
-        <link rel="icon" href="/favicon.ico" />
-
-        {/* Open Graph / Social Preview */}
-        <meta property="og:title" content="Shahsawaar Official" />
-        <meta property="og:description" content="Men's Jewellery & Accessories" />
-        <meta property="og:image" content="/og-image.jpg" />
-        <meta property="og:type" content="website" />
-        <meta property="og:url" content="https://shahsawaarofficial.store" />
-
-        {/* Twitter Cards */}
-        <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content="Shahsawaar Official" />
-        <meta name="twitter:description" content="Men's Jewellery & Accessories" />
-        <meta name="twitter:image" content="/og-image.png" />
-
-        {/* SEO */}
-        <title>{metadata.title}</title>
-        <meta name="description" content={metadata.description} />
-      </Head>
-
       <body className={`${poppins.className} bg-white text-black`}>
         <ClientProviders>
           <Navbar />
           <main className="min-h-screen">{children}</main>
           <Footer />
+          <Toaster />
         </ClientProviders>
       </body>
     </html>

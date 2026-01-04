@@ -1,11 +1,12 @@
 "use client";
 
-import { Product } from "@shared/schema";
+import { useState } from "react";
+import { Product } from "@/data/products";
 import { Card, CardContent } from "@/components/ui/card";
 import Link from "next/link";
-import { ShoppingCart, Heart } from "lucide-react";
-import { useCart } from "@/contexts/CartContext"; 
-import { useWishlist } from "@/contexts/WishlistContext"; // ✅ import wishlist
+import { ShoppingCart, Heart, Check } from "lucide-react";
+import { useCart } from "@/contexts/CartContext";
+import { useWishlist } from "@/contexts/WishlistContext";
 
 interface ProductCardProps {
   product: Product;
@@ -14,15 +15,24 @@ interface ProductCardProps {
 
 export default function ProductCard({ product, theme = "amber" }: ProductCardProps) {
   const { addToCart } = useCart();
-  const { toggleWishlist, isInWishlist } = useWishlist(); // ✅ use wishlist hook
+  const { toggleWishlist, isInWishlist } = useWishlist();
+  const [showAddedMessage, setShowAddedMessage] = useState(false);
 
   const handleCartClick = (e: React.MouseEvent) => {
-    e.preventDefault(); // ✅ prevent navigation
-    addToCart(product.id, 1); // ✅ match your CartContext signature
+    e.preventDefault();
+    e.stopPropagation();
+    
+    // Add to cart - pass the full product object
+    addToCart(product, 1, product.sizes[0]);
+    
+    // Show "Added to cart" popup
+    setShowAddedMessage(true);
+    setTimeout(() => setShowAddedMessage(false), 2000); // Hide after 2 seconds
   };
 
   const handleWishlistClick = (e: React.MouseEvent) => {
     e.preventDefault();
+    e.stopPropagation();
     toggleWishlist({
       id: product.id,
       name: product.name,
@@ -46,7 +56,15 @@ export default function ProductCard({ product, theme = "amber" }: ProductCardPro
 
   return (
     <Link href={`/details/${product.id}`} className="block group">
-      <Card className="product-card cursor-pointer border-none shadow-sm bg-transparent">
+      <Card className="product-card cursor-pointer border-none shadow-sm bg-transparent relative">
+        {/* ✅ "Added to cart" popup message */}
+        {showAddedMessage && (
+          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-50 bg-black text-white px-6 py-3 rounded-lg shadow-2xl flex items-center gap-2 animate-bounce">
+            <Check size={20} className="text-green-400" />
+            <span className="font-semibold">Added to cart!</span>
+          </div>
+        )}
+
         {/* Product Image */}
         <div className="overflow-hidden rounded-t-xl relative">
           <img
@@ -57,7 +75,7 @@ export default function ProductCard({ product, theme = "amber" }: ProductCardPro
           {/* ❤️ Wishlist Icon */}
           <button
             onClick={handleWishlistClick}
-            className="absolute top-2 right-2 p-1 bg-black/50 rounded-full"
+            className="absolute top-2 right-2 p-1 bg-black/50 rounded-full hover:bg-black/70 transition-all"
           >
             <Heart
               size={20}
@@ -73,17 +91,18 @@ export default function ProductCard({ product, theme = "amber" }: ProductCardPro
           <h3 className="font-serif text-lg font-semibold mb-1 text-slate-200">
             {product.name}
           </h3>
-
           {/* Price + Cart Icon */}
           <div className="flex items-center justify-between">
             <p className={`text-base font-semibold ${priceClass}`}>
               {product.price} PKR
             </p>
-            <ShoppingCart
-              size={20}
-              className={`${priceClass} cursor-pointer transition-all duration-200 transform hover:scale-110`}
+            {/* ✅ Cart icon with hover effect and popup on click */}
+            <button
               onClick={handleCartClick}
-            />
+              className={`${priceClass} cursor-pointer transition-all duration-200 transform hover:scale-125 active:scale-150 p-2 rounded-full hover:bg-white/10`}
+            >
+              <ShoppingCart size={20} />
+            </button>
           </div>
         </CardContent>
       </Card>

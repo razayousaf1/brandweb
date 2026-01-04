@@ -1,12 +1,17 @@
 "use client";
 
+import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Instagram, Mail, Phone, MessageCircle, ArrowRight, Crown, Star, Sparkles, Heart, Shield, Award } from "lucide-react";
+import { Instagram, Mail, Phone, MessageCircle, ArrowRight, Crown, Star, Sparkles, Heart, Shield, Award, Check } from "lucide-react";
 import { PRODUCTS } from "@/data/products";
 import { formatPrice } from "@/data/products";
 
 export default function Home() {
+  const [formSubmitted, setFormSubmitted] = useState(false);
+  const [newsletterSubmitted, setNewsletterSubmitted] = useState(false);
+  const [newsletterEmail, setNewsletterEmail] = useState("");
+
   // Featured products by ID
   const featuredProductIds = ["ring-1", "ring-2", "pendant-1", "pendant-2", "pendant-3", "pendant-4", "watch-1", "bag-1"];
   const featuredProducts = featuredProductIds
@@ -24,22 +29,79 @@ export default function Home() {
     {
       quote: "Shahsawaar pieces don't just look expensive, they feel like heirlooms.",
       author: "Ahmed K.",
-      role: "CEO, Tech Startup",
+      role: "Student",
       rating: 5
     },
     {
       quote: "Finally found accessories that match my ambition and style.",
       author: "Hassan M.",
-      role: "Creative Director", 
+      role: "Student", 
       rating: 5
     },
     {
       quote: "The quality and craftsmanship exceeded my expectations completely.",
       author: "Omar S.",
-      role: "Investment Banker",
+      role: "Student",
       rating: 5
     }
   ];
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const form = e.currentTarget;
+    
+    try {
+      const response = await fetch("https://formspree.io/f/xgvlpgwd", {
+        method: "POST",
+        body: new FormData(form),
+        headers: {
+          'Accept': 'application/json'
+        }
+      });
+      
+      if (response.ok) {
+        setFormSubmitted(true);
+        form.reset();
+        
+        setTimeout(() => {
+          setFormSubmitted(false);
+        }, 5000);
+      }
+    } catch (error) {
+      console.error("Form submission error:", error);
+    }
+  };
+
+  const handleNewsletterSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    
+    // ⚠️ REPLACE THIS URL WITH YOUR GOOGLE APPS SCRIPT WEB APP URL
+    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbypjEC01m3usQZyrYTczHTQR8qrLn3r21q2HYXWx_41hSWqJRDT_mYvT9Zj1IHJMbyf/exec";
+    
+    try {
+      const response = await fetch(GOOGLE_SCRIPT_URL, {
+        method: "POST",
+        mode: "no-cors",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: newsletterEmail,
+        }),
+      });
+      
+      setNewsletterSubmitted(true);
+      setNewsletterEmail("");
+      
+      setTimeout(() => {
+        setNewsletterSubmitted(false);
+      }, 5000);
+      
+    } catch (error) {
+      console.error("Newsletter submission error:", error);
+      alert("Something went wrong. Please try again.");
+    }
+  };
 
   return (
     <main className="w-full">
@@ -112,12 +174,6 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Scroll Indicator */}
-        <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 animate-bounce">
-          <div className="w-6 h-10 border-2 border-white/50 rounded-full flex justify-center">
-            <div className="w-1 h-3 bg-white/70 rounded-full mt-2 animate-pulse"></div>
-          </div>
-        </div>
       </section>
 
       {/* Enhanced Royal Essentials Section */}
@@ -139,7 +195,7 @@ export default function Home() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {/* Card 1 - Enhanced */}
+            {/* Card 1 */}
             <div className="group border-2 border-gray-100 rounded-2xl shadow-lg p-8 text-center hover:shadow-2xl hover:border-[#800000]/20 transition-all duration-300 bg-white relative overflow-hidden">
               <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-[#800000] to-red-600 transform -translate-y-full group-hover:translate-y-0 transition-transform duration-300"></div>
               
@@ -161,7 +217,7 @@ export default function Home() {
               </p>
             </div>
 
-            {/* Card 2 - Enhanced */}
+            {/* Card 2 */}
             <div className="group border-2 border-gray-100 rounded-2xl shadow-lg p-8 text-center hover:shadow-2xl hover:border-[#800000]/20 transition-all duration-300 bg-white relative overflow-hidden">
               <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-[#800000] to-red-600 transform -translate-y-full group-hover:translate-y-0 transition-transform duration-300"></div>
               
@@ -183,7 +239,7 @@ export default function Home() {
               </p>
             </div>
 
-            {/* Card 3 - Enhanced */}
+            {/* Card 3 */}
             <div className="group border-2 border-gray-100 rounded-2xl shadow-lg p-8 text-center hover:shadow-2xl hover:border-[#800000]/20 transition-all duration-300 bg-white relative overflow-hidden">
               <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-[#800000] to-red-600 transform -translate-y-full group-hover:translate-y-0 transition-transform duration-300"></div>
               
@@ -205,7 +261,7 @@ export default function Home() {
               </p>
             </div>
 
-            {/* Card 4 - Enhanced */}
+            {/* Card 4 */}
             <div className="group border-2 border-gray-100 rounded-2xl shadow-lg p-8 text-center hover:shadow-2xl hover:border-[#800000]/20 transition-all duration-300 bg-white relative overflow-hidden">
               <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-[#800000] to-red-600 transform -translate-y-full group-hover:translate-y-0 transition-transform duration-300"></div>
               
@@ -292,7 +348,7 @@ export default function Home() {
               href="/bracelets"
               className="inline-flex items-center px-8 py-4 bg-[#800000] text-white font-bold rounded-full hover:bg-red-800 transition-all duration-300 shadow-lg group"
             >
-              View All Collections
+              View Collections
               <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
             </Link>
           </div>
@@ -426,12 +482,23 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Enhanced Contact Form Section */}
+      {/* Enhanced Contact Form Section - FIXED */}
       <section className="w-full bg-gradient-to-br from-gray-50 to-white text-black py-24 px-6 lg:px-20">
         <div className="max-w-7xl mx-auto">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
             {/* Left Side - Form */}
-            <div className="bg-white p-10 rounded-3xl shadow-2xl border border-gray-100">
+            <div className="bg-white p-10 rounded-3xl shadow-2xl border border-gray-100 relative">
+              {/* Success Message Overlay */}
+              {formSubmitted && (
+                <div className="absolute inset-0 bg-green-500/95 rounded-3xl flex flex-col items-center justify-center z-50">
+                  <div className="bg-white rounded-full p-4 mb-4 animate-bounce">
+                    <Check className="w-16 h-16 text-green-500" />
+                  </div>
+                  <h3 className="text-3xl font-bold text-white mb-2">Message Sent!</h3>
+                  <p className="text-white text-lg">We'll get back to you soon.</p>
+                </div>
+              )}
+
               <div className="mb-8">
                 <Crown className="w-12 h-12 text-[#800000] mb-4" />
                 <h2 className="text-4xl font-extrabold mb-4 leading-tight">
@@ -443,8 +510,7 @@ export default function Home() {
               </div>
               
               <form 
-                action="https://formspree.io/f/xgvlpgwd" 
-                method="POST"
+                onSubmit={handleSubmit}
                 className="space-y-6"
               >
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -545,7 +611,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Enhanced Newsletter Signup */}
+      {/* Enhanced Newsletter Signup - WITH GOOGLE SHEETS */}
       <section className="bg-gradient-to-r from-[#800000] to-red-800 text-white py-20 px-6 lg:px-20 relative overflow-hidden">
         {/* Background Pattern */}
         <div className="absolute inset-0 opacity-10">
@@ -567,10 +633,21 @@ export default function Home() {
           </div>
 
           <div className="max-w-2xl mx-auto">
-            <form className="flex flex-col sm:flex-row gap-4">
+            {/* Success Message */}
+            {newsletterSubmitted && (
+              <div className="mb-6 bg-green-500 text-white px-6 py-4 rounded-full text-center font-bold text-lg animate-bounce flex items-center justify-center gap-2">
+                <Check className="w-6 h-6" />
+                Successfully subscribed! Welcome to the Royal Circle 👑
+              </div>
+            )}
+
+            <form onSubmit={handleNewsletterSubmit} className="flex flex-col sm:flex-row gap-4">
               <input
                 type="email"
+                value={newsletterEmail}
+                onChange={(e) => setNewsletterEmail(e.target.value)}
                 placeholder="Enter your royal email address"
+                required
                 className="flex-grow px-6 py-4 rounded-full text-black bg-white border-2 border-transparent focus:border-yellow-400 focus:ring-2 focus:ring-yellow-400/20 focus:outline-none text-lg"
               />
               <button

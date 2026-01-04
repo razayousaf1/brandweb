@@ -1,5 +1,4 @@
 import { Suspense } from "react";
-import SuccessClient from "./SuccessClient";
 
 
 import { useSearchParams, useRouter } from "next/navigation";

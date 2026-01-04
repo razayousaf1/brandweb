@@ -98,9 +98,6 @@ export default function About() {
             ))}
           </div>
 
-          <div className="animate-bounce">
-            <ArrowRight className="w-6 h-6 mx-auto rotate-90 text-white" />
-          </div>
         </div>
       </section>
 
@@ -293,7 +290,9 @@ export default function About() {
               <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
             </a>
             <a
-              href="#"
+              href="https://www.instagram.com/shahsawaarofficial/"
+              target="_blank"
+              rel="noopener noreferrer"
               className="inline-flex items-center border-2 border-white text-white px-8 py-4 rounded-full font-bold text-lg hover:bg-white hover:text-red-900 transition-all duration-300"
             >
               <Users className="mr-2 w-5 h-5" />

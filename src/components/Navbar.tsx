@@ -51,7 +51,8 @@ export default function Navbar() {
           {/* 🌟 Logo + Nav links */}
           <div className="flex items-center space-x-8">
             <Link href="/" data-testid="link-home">
-              <h1 className="font-serif text-2xl font-bold text-black cursor-pointer">
+              {/* ✅ FIXED: Added responsive text sizing and whitespace-nowrap */}
+              <h1 className="font-serif text-xl sm:text-2xl font-bold text-black cursor-pointer whitespace-nowrap">
                 Shahsawaar
               </h1>
             </Link>

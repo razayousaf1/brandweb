@@ -1,10 +1,11 @@
 import { NextResponse } from "next/server";
-import { adminDb } from "@/lib/firebase-admin";
+import { db } from "@/lib/firebase-client";
+import { collection, query, where, getDocs, deleteDoc, doc } from "firebase/firestore";
 
 // DELETE /api/cart/session/[sessionId]
 export async function DELETE(
   req: Request,
-  { params }: { params: { sessionId: string } }
+  { params }: { params: Promise<{ sessionId: string }> }
 ) {
   try {
     const { sessionId } = await params;
@@ -15,10 +16,11 @@ export async function DELETE(
       return NextResponse.json({ error: "Missing sessionId" }, { status: 400 });
     }
 
-    const snapshot = await adminDb
-      .collection("cart")
-      .where("sessionId", "==", sessionId)
-      .get();
+    const q = query(
+      collection(db, "cart"),
+      where("sessionId", "==", sessionId)
+    );
+    const snapshot = await getDocs(q);
 
     console.log("🗑️ Found", snapshot.docs.length, "items to delete");
 
@@ -27,9 +29,9 @@ export async function DELETE(
       return NextResponse.json({ success: true, deleted: 0 });
     }
 
-    const deletePromises = snapshot.docs.map((doc) => {
-      console.log("🗑️ Deleting item:", doc.id);
-      return doc.ref.delete();
+    const deletePromises = snapshot.docs.map((docSnap) => {
+      console.log("🗑️ Deleting item:", docSnap.id);
+      return deleteDoc(doc(db, "cart", docSnap.id));
     });
 
     await Promise.all(deletePromises);

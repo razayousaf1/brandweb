@@ -72,6 +72,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     [cartItems]
   );
 
+  
+
   const addToCartMutation = useMutation({
     mutationFn: async ({
       productId,
@@ -120,7 +122,16 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
   const addToCart = useCallback(
     (product: Product, quantity = 1, size?: string) => {
-      if (!sessionId) return;
+      console.log("➕ ADD TO CART - Product:", product);
+      console.log("➕ ADD TO CART - Quantity:", quantity);
+      console.log("➕ ADD TO CART - Size:", size);
+      console.log("➕ ADD TO CART - Session ID:", sessionId);
+      
+      if (!sessionId) {
+        console.error("❌ No session ID!");
+        return;
+      }
+      
       addToCartMutation.mutate({
         productId: product.id,
         quantity,

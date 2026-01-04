@@ -112,7 +112,7 @@ export default function BraceletsPage() {
                 >
                   <div className="relative overflow-hidden rounded-2xl bg-slate-800/30 backdrop-blur-sm border border-slate-700/30 hover:border-emerald-400/50 transition-all duration-500 hover:shadow-2xl hover:shadow-emerald-500/10 group-hover:bg-slate-800/40">
                     {/* 👇 Pass the theme here */}
-                    <ProductCard product={product} theme="emerald" />
+                    <ProductCard product={product} theme="green" />
                   </div>
                 </div>
               ))}

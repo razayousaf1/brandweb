@@ -1,5 +1,16 @@
 import { NextResponse } from "next/server";
-import { adminDb } from "@/lib/firebase-admin";
+import { db } from "@/lib/firebase-client";
+import {
+  collection,
+  addDoc,
+  query,
+  where,
+  getDocs,
+  doc,
+  updateDoc,
+  getDoc,
+  deleteDoc,
+} from "firebase/firestore";
 
 // GET /api/cart?sessionId=xxx
 export async function GET(req: Request) {
@@ -9,50 +20,34 @@ export async function GET(req: Request) {
     
     console.log("🔍 GET /api/cart called with sessionId:", sessionId);
     
-    // Return empty cart instead of error for missing sessionId
     if (!sessionId) {
       console.log("⚠️ Missing sessionId, returning empty cart");
       return NextResponse.json([]);
     }
 
-    const snapshot = await adminDb
-      .collection("cart")
-      .where("sessionId", "==", sessionId)
-      .get();
+    const q = query(collection(db, "cart"), where("sessionId", "==", sessionId));
+    const snapshot = await getDocs(q);
     
-    console.log("📦 Found", snapshot.docs.length, "cart items in Firestore");
+    console.log("📦 Found", snapshot.docs.length, "cart items");
     
-    const items = snapshot.docs.map((doc) => {
-      const data = doc.data();
-      console.log("📦 Processing cart item:", { id: doc.id, ...data });
-      
-      // The product data is already embedded in the cart item
+    const items = snapshot.docs.map((docSnap) => {
+      const data = docSnap.data();
       const product = data.product ? {
         id: data.product.id || data.productId,
         ...data.product
       } : null;
       
-      if (product) {
-        console.log("✅ Product found embedded:", product.name);
-      } else {
-        console.log("❌ No product data embedded for:", data.productId);
-      }
-      
-      const item = {
-        id: doc.id,
+      return {
+        id: docSnap.id,
         ...data,
-        product, // use the embedded product data
+        product,
       };
-      
-      console.log("📦 Final cart item:", item);
-      return item;
     });
     
     console.log("✅ Returning", items.length, "items");
     return NextResponse.json(items);
   } catch (error) {
     console.error("💥 Error fetching cart:", error);
-    // Return empty cart instead of error for better UX
     return NextResponse.json([]);
   }
 }
@@ -62,34 +57,31 @@ export async function POST(req: Request) {
   try {
     const { productId, quantity = 1, size, sessionId, product } = await req.json();
     
-    console.log("➕ POST /api/cart called with:", { productId, quantity, size, sessionId, hasProduct: !!product });
+    console.log("➕ POST /api/cart called with:", { productId, quantity, size, sessionId });
     
     if (!productId || !sessionId) {
-      console.log("❌ Missing fields:", { productId: !!productId, sessionId: !!sessionId });
+      console.log("❌ Missing fields");
       return NextResponse.json({ error: "Missing fields" }, { status: 400 });
     }
 
-    // Check if item already exists in cart
-    const existingItems = await adminDb
-      .collection("cart")
-      .where("sessionId", "==", sessionId)
-      .where("productId", "==", productId)
-      .where("size", "==", size || null)
-      .get();
-
-    console.log("🔍 Found", existingItems.docs.length, "existing items");
+    // Check if item already exists
+    const q = query(
+      collection(db, "cart"), 
+      where("sessionId", "==", sessionId),
+      where("productId", "==", productId),
+      where("size", "==", size || null)
+    );
+    const existingItems = await getDocs(q);
 
     if (!existingItems.empty) {
-      // Update existing item quantity
+      // Update existing item
       const existingItem = existingItems.docs[0];
       const currentQuantity = existingItem.data().quantity || 0;
       const newQuantity = currentQuantity + quantity;
       
-      console.log("📝 Updating existing item quantity:", currentQuantity, "→", newQuantity);
+      console.log("📝 Updating quantity:", currentQuantity, "→", newQuantity);
       
-      await existingItem.ref.update({ 
-        quantity: newQuantity 
-      });
+      await updateDoc(existingItem.ref, { quantity: newQuantity });
       
       const result = { 
         id: existingItem.id, 
@@ -97,30 +89,31 @@ export async function POST(req: Request) {
         quantity: newQuantity
       };
       
-      console.log("✅ Updated existing item:", result);
+      console.log("✅ Updated item");
       return NextResponse.json(result);
     } else {
-      // Add new item with embedded product data
+      // Add new item
       const newItem = { 
         productId, 
         quantity, 
         size: size || null, 
         sessionId, 
-        product: product || null, // Include the full product data
+        product: product || null,
         createdAt: Date.now() 
       };
       
-      console.log("➕ Adding new item:", newItem);
+      console.log("➕ Adding new item");
       
-      const docRef = await adminDb.collection("cart").add(newItem);
+      const docRef = await addDoc(collection(db, "cart"), newItem);
       
-      const result = { id: docRef.id, ...newItem };
-      console.log("✅ Added new item:", result);
-      
-      return NextResponse.json(result);
+      console.log("✅ Added item with ID:", docRef.id);
+      return NextResponse.json({ id: docRef.id, ...newItem });
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error("💥 Error adding to cart:", error);
-    return NextResponse.json({ error: "Failed to add item" }, { status: 500 });
+    return NextResponse.json({ 
+      error: "Failed to add item",
+      details: error.message 
+    }, { status: 500 });
   }
 }

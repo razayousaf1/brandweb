@@ -1,10 +1,11 @@
 import { NextResponse } from "next/server";
-import { adminDb } from "@/lib/firebase-admin";
+import { db } from "@/lib/firebase-client";
+import { doc, updateDoc, deleteDoc, getDoc } from "firebase/firestore";
 
 // PUT /api/cart/:id
 export async function PUT(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { id } = await params;
@@ -20,10 +21,10 @@ export async function PUT(
       );
     }
 
-    const ref = adminDb.collection("cart").doc(id);
-    const doc = await ref.get();
+    const ref = doc(db, "cart", id);
+    const docSnap = await getDoc(ref);
     
-    if (!doc.exists) {
+    if (!docSnap.exists()) {
       console.log("❌ Document not found:", id);
       return NextResponse.json(
         { error: "Cart item not found" },
@@ -31,20 +32,16 @@ export async function PUT(
       );
     }
 
-    await ref.update({ quantity });
+    await updateDoc(ref, { quantity });
     console.log("✅ Updated cart item:", id);
 
     return NextResponse.json({ success: true, id, quantity });
   } catch (error: any) {
     console.error("💥 Error updating cart:", error);
-    console.error("💥 Error message:", error?.message);
-    console.error("💥 Error code:", error?.code);
-    
     return NextResponse.json(
       {
         error: "Failed to update cart",
         message: error?.message || "Unknown error",
-        code: error?.code,
       },
       { status: 500 }
     );
@@ -54,23 +51,16 @@ export async function PUT(
 // DELETE /api/cart/:id
 export async function DELETE(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { id } = await params;
-    const { searchParams } = new URL(req.url);
-    const sessionId = searchParams.get("sessionId");
+    console.log("🗑️ DELETE /api/cart/:id called with:", id);
 
-    console.log("🗑️ DELETE /api/cart/:id called with:", {
-      id,
-      sessionId,
-      fullUrl: req.url,
-    });
+    const ref = doc(db, "cart", id);
+    const docSnap = await getDoc(ref);
 
-    const ref = adminDb.collection("cart").doc(id);
-    const doc = await ref.get();
-
-    if (!doc.exists) {
+    if (!docSnap.exists()) {
       console.log("❌ Document not found:", id);
       return NextResponse.json(
         { error: "Cart item not found" },
@@ -78,22 +68,16 @@ export async function DELETE(
       );
     }
 
-    console.log("📄 Document exists, deleting...");
-    await ref.delete();
+    await deleteDoc(ref);
     console.log("✅ Deleted cart item:", id);
 
     return NextResponse.json({ success: true, id });
   } catch (error: any) {
     console.error("💥 Error deleting cart item:", error);
-    console.error("💥 Error message:", error?.message);
-    console.error("💥 Error code:", error?.code);
-    console.error("💥 Error stack:", error?.stack);
-
     return NextResponse.json(
       {
         error: "Failed to delete item",
         message: error?.message || "Unknown error",
-        code: error?.code,
       },
       { status: 500 }
     );

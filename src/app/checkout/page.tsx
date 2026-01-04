@@ -22,6 +22,7 @@ export default function CheckoutPage() {
     postalCode: "",
   });
 
+  const [paymentMethod, setPaymentMethod] = useState<'card' | 'cod'>('card');
   const [error, setError] = useState("");
   const [touched, setTouched] = useState<{ [key: string]: boolean }>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -29,7 +30,6 @@ export default function CheckoutPage() {
   // ✅ Handle input changes
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
-    // Clear error when user starts typing
     if (error) setError("");
   };
 
@@ -51,20 +51,17 @@ export default function CheckoutPage() {
 
   // ✅ Handle form submission
   const handleSubmit = async () => {
-    if (isSubmitting) return; // Prevent double submission
+    if (isSubmitting) return;
     
     try {
       setIsSubmitting(true);
       const user = auth.currentUser;
       
-      // Check if user is authenticated
       if (!user) {
         setError("Please sign in before checking out.");
         setTimeout(() => router.push("/signin"), 2000);
         return;
       }
-
-      console.log("User authenticated:", user.uid);
 
       // Mark all required fields as touched
       setTouched({
@@ -94,8 +91,6 @@ export default function CheckoutPage() {
         return;
       }
 
-      console.log("Submitting order...");
-
       // ✅ Save order in Firestore
       const orderData = {
         userId: user.uid,
@@ -118,35 +113,42 @@ export default function CheckoutPage() {
           postalCode: form.postalCode || "",
           country: "Pakistan",
         },
+        paymentMethod: paymentMethod,
+        paymentStatus: paymentMethod === 'cod' ? 'pending' : 'unpaid',
         status: "pending",
         createdAt: serverTimestamp(),
       };
 
-      console.log("Order data:", orderData);
-
       const docRef = await addDoc(collection(db, "orders"), orderData);
       console.log("Order saved with ID:", docRef.id);
 
-      // ✅ Redirect to confirmation page FIRST
-      // We redirect before clearing cart to avoid race conditions
-      router.push("/checkout/confirm");
-      
-      // ✅ Clear cart after redirect (non-blocking)
-      setTimeout(() => {
-        try {
-          clearCart();
-          console.log("Cart clear initiated");
-        } catch (cartError) {
-          console.error("Cart clear error (non-blocking):", cartError);
-        }
-      }, 100);
+      // If COD, go directly to confirmation
+      if (paymentMethod === 'cod') {
+        router.push("/checkout/confirm");
+        setTimeout(() => clearCart(), 100);
+      } else {
+        // If Card payment, initiate EasyPaisa payment
+        // TODO: Once you have EasyPaisa credentials, uncomment this
+        // const response = await fetch('/api/easypaisa-checkout', {
+        //   method: 'POST',
+        //   headers: { 'Content-Type': 'application/json' },
+        //   body: JSON.stringify({
+        //     orderId: docRef.id,
+        //     amount: finalTotal,
+        //     customerEmail: user.email,
+        //     customerPhone: form.phoneForUpdates,
+        //   }),
+        // });
+        // const data = await response.json();
+        // window.location.href = data.paymentUrl; // Redirect to EasyPaisa
+        
+        // For now, show message that payment gateway is coming soon
+        alert("Card payment will be available soon! Please use Cash on Delivery for now.");
+        setPaymentMethod('cod');
+        setIsSubmitting(false);
+      }
     } catch (err: any) {
       console.error("Order submission error:", err);
-      console.error("Error details:", {
-        code: err.code,
-        message: err.message,
-        stack: err.stack,
-      });
       
       if (err.code === "permission-denied") {
         setError("Permission denied. Please sign in again.");
@@ -162,9 +164,7 @@ export default function CheckoutPage() {
     return (
       <div className="container mx-auto px-4 py-16 text-center">
         <h1 className="text-3xl font-bold mb-4">Your Cart is Empty</h1>
-        <p className="text-gray-500 mb-8">
-          Add some items to checkout.
-        </p>
+        <p className="text-gray-500 mb-8">Add some items to checkout.</p>
         <Button onClick={() => router.push("/")}>Continue Shopping</Button>
       </div>
     );
@@ -182,8 +182,6 @@ export default function CheckoutPage() {
 
       {/* Customer Details Form */}
       <div className="space-y-6 mb-8">
-
-        {/* Shipping Details Section */}
         <div className="space-y-4 pt-6 border-t">
           <h2 className="text-xl font-semibold">Shipping Details</h2>
           
@@ -271,6 +269,86 @@ export default function CheckoutPage() {
         </div>
       </div>
 
+      {/* Payment Method Selection */}
+      <div className="mb-8">
+        <h2 className="text-xl font-semibold mb-4">Payment</h2>
+        <p className="text-sm text-gray-600 mb-6">
+          All transactions are secure and encrypted. Variable fees such as foreign exchange 
+          and international transaction fees may apply, set by your card issuer.
+        </p>
+
+        {/* Card Payment Option */}
+        <div 
+          onClick={() => setPaymentMethod('card')}
+          className={`border-2 rounded-lg p-4 mb-4 cursor-pointer transition-all ${
+            paymentMethod === 'card' 
+              ? 'border-blue-600 bg-blue-50' 
+              : 'border-gray-300 hover:border-gray-400'
+          }`}
+        >
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-3">
+              <input
+                type="radio"
+                checked={paymentMethod === 'card'}
+                onChange={() => setPaymentMethod('card')}
+                className="w-5 h-5 cursor-pointer"
+              />
+              <span className="font-semibold">Credit / Debit Card</span>
+            </div>
+            <div className="flex gap-2">
+              <span className="text-blue-600 font-bold text-sm">VISA</span>
+              <span className="text-orange-600 font-bold text-sm">MasterCard</span>
+            </div>
+          </div>
+          
+          {paymentMethod === 'card' && (
+            <div className="bg-white rounded-lg p-4 mt-3 border border-gray-200">
+              <div className="text-center py-6">
+                <svg className="w-16 h-16 mx-auto mb-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                <p className="text-sm text-gray-600">
+                  After clicking "Pay now", you will be redirected to<br />
+                  <strong>EasyPaisa</strong> to complete your purchase securely.
+                </p>
+                <p className="text-xs text-orange-600 mt-2 font-semibold">
+                  Coming soon! Please use COD for now.
+                </p>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Cash on Delivery Option */}
+        <div 
+          onClick={() => setPaymentMethod('cod')}
+          className={`border-2 rounded-lg p-4 cursor-pointer transition-all ${
+            paymentMethod === 'cod' 
+              ? 'border-blue-600 bg-blue-50' 
+              : 'border-gray-300 hover:border-gray-400'
+          }`}
+        >
+          <div className="flex items-center gap-3">
+            <input
+              type="radio"
+              checked={paymentMethod === 'cod'}
+              onChange={() => setPaymentMethod('cod')}
+              className="w-5 h-5 cursor-pointer"
+            />
+            <span className="font-semibold">Cash on Delivery (COD)</span>
+          </div>
+          
+          {paymentMethod === 'cod' && (
+            <div className="mt-3 p-3 bg-white rounded border border-gray-200">
+              <p className="text-sm text-gray-600">
+                💵 Pay with cash when your order is delivered to your doorstep, You will receive order confirmation on your email or phone number.
+              </p>
+            </div>
+          )}
+        </div>
+      </div>
+
       {/* Order Summary */}
       <div className="bg-gray-50 p-4 rounded-lg shadow-sm mb-8">
         <h2 className="text-xl font-semibold mb-4">Order Summary</h2>
@@ -283,20 +361,20 @@ export default function CheckoutPage() {
               {item.product.name} 
               {item.size ? ` (${item.size})` : ""} × {item.quantity}
             </span>
-            <span>Rs {(item.product.price * item.quantity).toFixed(2)}</span>
+            <span>Rs {(item.product.price * item.quantity).toLocaleString()}</span>
           </div>
         ))}
         <div className="flex justify-between mt-4 pt-2">
           <span>Subtotal:</span>
-          <span>Rs {cartTotal.toFixed(2)}</span>
+          <span>Rs {cartTotal.toLocaleString()}</span>
         </div>
         <div className="flex justify-between py-2">
           <span>Shipping Fee:</span>
-          <span>Rs {shippingFee.toFixed(2)}</span>
+          <span>Rs {shippingFee.toLocaleString()}</span>
         </div>
         <div className="flex justify-between font-bold text-lg border-t pt-2">
           <span>Total:</span>
-          <span>Rs {finalTotal.toFixed(2)}</span>
+          <span>Rs {finalTotal.toLocaleString()}</span>
         </div>
       </div>
 
@@ -304,10 +382,14 @@ export default function CheckoutPage() {
       <Button
         onClick={handleSubmit}
         disabled={isSubmitting}
-        className="w-full bg-black text-white hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed"
+        className="w-full bg-black text-white hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed text-lg py-6"
       >
-        {isSubmitting ? "Processing..." : "Place Order"}
+        {isSubmitting ? "Processing..." : paymentMethod === 'cod' ? 'Place Order' : 'Pay Now'}
       </Button>
+
+      <p className="text-xs text-center text-gray-500 mt-4">
+        By placing your order, you agree to our terms and conditions.
+      </p>
     </div>
   );
 }

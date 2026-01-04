@@ -1,6 +1,7 @@
 "use client";
+
 import { useState } from 'react';
-import { Product } from '@shared/schema';
+import { Product } from '@/data/products';
 import { useCart } from '@/contexts/CartContext';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -52,7 +53,6 @@ export default function ProductModal({ product, isOpen, onClose }: ProductModalP
 
   const handleBuyNow = () => {
     handleAddToCart();
-    // In a real app, this would redirect to checkout
     toast({
       title: "Redirecting to checkout",
       description: "This would normally redirect to the checkout page.",
@@ -90,7 +90,7 @@ export default function ProductModal({ product, isOpen, onClose }: ProductModalP
               </DialogHeader>
               
               <p className="text-3xl font-bold text-primary mb-6" data-testid="text-modal-product-price">
-                ${product.price}
+                PKR {product.price}
               </p>
               
               <p className="text-muted-foreground text-lg mb-8" data-testid="text-modal-product-description">
@@ -106,7 +106,7 @@ export default function ProductModal({ product, isOpen, onClose }: ProductModalP
                         <SelectValue placeholder="Select Size" />
                       </SelectTrigger>
                       <SelectContent>
-                        {product.sizes.map((size) => (
+                        {product.sizes.map((size: string) => (
                           <SelectItem key={size} value={size}>
                             {size}
                           </SelectItem>
