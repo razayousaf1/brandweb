@@ -17,7 +17,7 @@ export const metadata: Metadata = {
   icons: {
     icon: [
       { url: '/site-icon.ico' },
-      { url: '/site-icon.ico?v=2', type: 'image/x-icon' }, // cache buster
+      { url: '/site-icon.ico?v=3', type: 'image/x-icon' }, // cache buster
     ],
     shortcut: '/site-icon.ico',
     apple: '/apple-touch-icon.png',

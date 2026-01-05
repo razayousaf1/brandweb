@@ -2,27 +2,26 @@ import { onDocumentCreated } from 'firebase-functions/v2/firestore';
 import * as admin from 'firebase-admin';
 import { Resend } from 'resend';
 import twilio from 'twilio';
+import { defineSecret } from 'firebase-functions/params';
 
 admin.initializeApp();
 
-// Get environment variables - hardcoded for reliability
-const RESEND_API_KEY = 're_fsvozpAp_wzhN8gsXTrGkqo4VtkXRQ4ZC';
-const TWILIO_ACCOUNT_SID = 'ACf232ccd917ba591a4a0fc704c35f5331';
-const TWILIO_AUTH_TOKEN = 'cf9de91d189c50e7005a78113b94b784';
+// Define secrets for Firebase Functions v2
+const resendApiKey = defineSecret('RESEND_API_KEY');
+const twilioAccountSid = defineSecret('TWILIO_ACCOUNT_SID');
+const twilioAuthToken = defineSecret('TWILIO_AUTH_TOKEN');
+
 const TWILIO_WHATSAPP_NUMBER = 'whatsapp:+14155238886';
 const APP_URL = 'https://shahsawaarofficial.store';
 const BRAND_EMAIL = 'orders@shahsawaarofficial.store';
-
-// Initialize services
-const resend = new Resend(RESEND_API_KEY);
-const twilioClient = twilio(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN);
 
 // Trigger when new order is created
 export const sendOrderConfirmation = onDocumentCreated(
   {
     document: 'orders/{orderId}',
-    region: 'asia-south1', // Mumbai - best for Pakistan
-    database: 'production'
+    region: 'asia-south1',
+    database: 'production',
+    secrets: [resendApiKey, twilioAccountSid, twilioAuthToken], // Add secrets here
   },
   async (event) => {
     const snap = event.data;
@@ -34,26 +33,27 @@ export const sendOrderConfirmation = onDocumentCreated(
     const order = snap.data();
     const orderId = event.params.orderId;
 
+    // Initialize services with secrets
+    const resend = new Resend(resendApiKey.value());
+    const twilioClient = twilio(twilioAccountSid.value(), twilioAuthToken.value());
+
     try {
-      // Format items for email
+      // ... rest of your code stays the same ...
       const itemsList = order.items
         .map((item: any) => `${item.name} x${item.quantity} - Rs. ${item.price.toLocaleString()}`)
         .join('<br>');
 
-      // Send Email
       await resend.emails.send({
         from: `Shahsawaar Official <${BRAND_EMAIL}>`,
         to: order.userEmail,
         subject: 'Please Confirm Your Order',
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff;">
-            <!-- Logo Header -->
             <div style="text-align: center; padding: 30px 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 8px 8px 0 0;">
               <img src="${APP_URL}/logo.png" alt="Shahsawaar Official" style="max-width: 120px; height: auto; margin-bottom: 10px;">
               <h1 style="margin: 0; color: #ffffff; font-size: 24px; font-weight: bold;">Shahsawaar Official</h1>
             </div>
             
-            <!-- Email Content -->
             <div style="padding: 30px 20px;">
               <h2 style="color: #333; margin-top: 0;">Order Confirmation Required</h2>
               <p style="color: #555; line-height: 1.6;">Hi ${order.shipping.fullName},</p>
@@ -97,7 +97,6 @@ export const sendOrderConfirmation = onDocumentCreated(
               </p>
             </div>
             
-            <!-- Footer -->
             <div style="background: #f8f8f8; padding: 20px; text-align: center; border-radius: 0 0 8px 8px; border-top: 1px solid #e0e0e0;">
               <p style="color: #999; font-size: 12px; margin: 5px 0;">
                 <strong>Shahsawaar Official</strong><br>
@@ -113,7 +112,6 @@ export const sendOrderConfirmation = onDocumentCreated(
 
       console.log(`Email sent to ${order.userEmail} for order ${orderId}`);
 
-      // Send WhatsApp (if phone provided)
       if (order.shipping.phoneForUpdates) {
         const whatsappItems = order.items
           .map((item: any) => `• ${item.name} x${item.quantity}`)
