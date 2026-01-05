@@ -14,7 +14,7 @@ const poppins = Poppins({
 export const metadata: Metadata = {
   title: "Shahsawaar | Men's Jewellery",
   description: "Where Royalty Meets Refinement",
-  icons: {
+ /* icons: {
     icon: [
       { url: '/site-icon.ico' },
       { url: '/site-icon.ico?v=3', type: 'image/x-icon' }, // cache buster
@@ -22,6 +22,7 @@ export const metadata: Metadata = {
     shortcut: '/site-icon.ico',
     apple: '/apple-touch-icon.png',
   },
+  */
   openGraph: {
     title: "Shahsawaar Official",
     description: "Men's Jewellery & Accessories",
