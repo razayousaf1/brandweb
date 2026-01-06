@@ -5,6 +5,14 @@ export async function POST(request: NextRequest) {
   try {
     const { orderId, amount, customerEmail, customerPhone } = await request.json();
 
+    // Validate inputs
+    if (!orderId || !amount) {
+      return NextResponse.json(
+        { error: 'Missing required fields' },
+        { status: 400 }
+      );
+    }
+
     // JazzCash credentials
     const MERCHANT_ID = process.env.JAZZCASH_MERCHANT_ID || 'MC558735';
     const PASSWORD = process.env.JAZZCASH_PASSWORD || 'yzg099f0ys';
@@ -61,8 +69,11 @@ export async function POST(request: NextRequest) {
       .digest('hex')
       .toUpperCase();
 
-    console.log('🔐 Hash String:', hashString);
-    console.log('🔐 Secure Hash:', secureHash);
+    console.log('🔐 Payment Request:', {
+      orderId,
+      amount: amountInPaisa,
+      txnDateTime,
+    });
 
     // JazzCash payment form data
     const paymentData = {
@@ -91,7 +102,8 @@ export async function POST(request: NextRequest) {
     };
 
     // JazzCash payment gateway URL
-    const JAZZCASH_URL = process.env.JAZZCASH_PAYMENT_URL || 'https://sandbox.jazzcash.com.pk/CustomerPortal/transactionmanagement/merchantform/';
+    const JAZZCASH_URL = process.env.JAZZCASH_PAYMENT_URL || 
+      'https://sandbox.jazzcash.com.pk/CustomerPortal/transactionmanagement/merchantform/';
 
     return NextResponse.json({
       success: true,
@@ -101,7 +113,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('JazzCash checkout error:', error);
     return NextResponse.json(
-      { error: 'Failed to initiate payment' },
+      { success: false, error: 'Failed to initiate payment' },
       { status: 500 }
     );
   }
