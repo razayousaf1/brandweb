@@ -27,29 +27,24 @@ export default function CheckoutPage() {
   const [touched, setTouched] = useState<{ [key: string]: boolean }>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // ✅ Handle input changes
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
     if (error) setError("");
   };
 
-  // ✅ Handle input blur to mark field as touched
   const handleBlur = (fieldName: string) => {
     setTouched({ ...touched, [fieldName]: true });
   };
 
-  // ✅ Validate phone number format
   const validatePhone = (phone: string): boolean => {
     const phoneRegex = /^\+92\d{10}$/;
     return phoneRegex.test(phone);
   };
 
-  // ✅ Check if field should show error
   const showFieldError = (fieldName: keyof typeof form): boolean => {
     return touched[fieldName] && !form[fieldName];
   };
 
-  // ✅ Handle form submission
   const handleSubmit = async () => {
     if (isSubmitting) return;
     
@@ -63,7 +58,6 @@ export default function CheckoutPage() {
         return;
       }
 
-      // Mark all required fields as touched
       setTouched({
         fullName: true,
         phoneForUpdates: true,
@@ -71,14 +65,12 @@ export default function CheckoutPage() {
         address: true,
       });
 
-      // Check if all required fields are filled
       if (!form.fullName || !form.phoneForUpdates || !form.city || !form.address) {
         setError("Please fill in all required fields.");
         setIsSubmitting(false);
         return;
       }
 
-      // Validate phone number format
       if (!validatePhone(form.phoneForUpdates)) {
         setError("Phone number must be in format: +92XXXXXXXXXX (e.g., +923001234567)");
         setIsSubmitting(false);
@@ -91,7 +83,6 @@ export default function CheckoutPage() {
         return;
       }
 
-      // ✅ Save order in Firestore
       const orderData = {
         userId: user.uid,
         userEmail: user.email || "",
@@ -122,30 +113,44 @@ export default function CheckoutPage() {
       const docRef = await addDoc(collection(db, "orders"), orderData);
       console.log("Order saved with ID:", docRef.id);
 
-      // If COD, go directly to confirmation
       if (paymentMethod === 'cod') {
         router.push("/checkout/confirm");
         setTimeout(() => clearCart(), 100);
       } else {
-        // If Card payment, initiate EasyPaisa payment
-        // TODO: Once you have EasyPaisa credentials, uncomment this
-        // const response = await fetch('/api/easypaisa-checkout', {
-        //   method: 'POST',
-        //   headers: { 'Content-Type': 'application/json' },
-        //   body: JSON.stringify({
-        //     orderId: docRef.id,
-        //     amount: finalTotal,
-        //     customerEmail: user.email,
-        //     customerPhone: form.phoneForUpdates,
-        //   }),
-        // });
-        // const data = await response.json();
-        // window.location.href = data.paymentUrl; // Redirect to EasyPaisa
-        
-        // For now, show message that payment gateway is coming soon
-        alert("Card payment will be available soon! Please use Cash on Delivery for now.");
-        setPaymentMethod('cod');
-        setIsSubmitting(false);
+        // Credit Card Payment - Call Easypaisa API
+        const response = await fetch('/api/easypaisa-checkout', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            orderId: docRef.id,
+            amount: finalTotal,
+            customerEmail: user.email,
+            customerPhone: form.phoneForUpdates,
+          }),
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          // Create form and auto-submit to Easypaisa
+          const easypaisaForm = document.createElement('form');
+          easypaisaForm.method = 'POST';
+          easypaisaForm.action = data.paymentUrl;
+
+          Object.entries(data.paymentData).forEach(([key, value]) => {
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = key;
+            input.value = String(value);
+            easypaisaForm.appendChild(input);
+          });
+
+          document.body.appendChild(easypaisaForm);
+          easypaisaForm.submit();
+        } else {
+          setError("Failed to initiate payment. Please try again.");
+          setIsSubmitting(false);
+        }
       }
     } catch (err: any) {
       console.error("Order submission error:", err);
@@ -159,7 +164,6 @@ export default function CheckoutPage() {
     }
   };
 
-  // ✅ If cart is empty
   if (cartItems.length === 0) {
     return (
       <div className="container mx-auto px-4 py-16 text-center">
@@ -180,7 +184,7 @@ export default function CheckoutPage() {
         </div>
       )}
 
-      {/* Customer Details Form */}
+      {/* Shipping Details Form */}
       <div className="space-y-6 mb-8">
         <div className="space-y-4 pt-6 border-t">
           <h2 className="text-xl font-semibold">Shipping Details</h2>
@@ -309,11 +313,8 @@ export default function CheckoutPage() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
                 <p className="text-sm text-gray-600">
-                  After clicking "Pay now", you will be redirected to<br />
-                  <strong>EasyPaisa</strong> to complete your purchase securely.
-                </p>
-                <p className="text-xs text-orange-600 mt-2 font-semibold">
-                  Coming soon! Please use COD for now.
+                  After clicking "Pay now", you will be redirected to our<br />
+                  secure payment gateway to complete your purchase.
                 </p>
               </div>
             </div>
@@ -342,7 +343,7 @@ export default function CheckoutPage() {
           {paymentMethod === 'cod' && (
             <div className="mt-3 p-3 bg-white rounded border border-gray-200">
               <p className="text-sm text-gray-600">
-                💵 Pay with cash when your order is delivered to your doorstep, You will receive order confirmation on your email or phone number.
+                💵 Pay with cash when your order is delivered to your doorstep. You will receive order confirmation on your email or phone number.
               </p>
             </div>
           )}

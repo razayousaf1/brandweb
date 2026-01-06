@@ -23,6 +23,10 @@ export const metadata: Metadata = {
     apple: '/apple-touch-icon.png',
   },
   */
+  icons: {
+    icon: '/icon.png',
+    apple: '/apple-touch-icon.png',
+  },
   openGraph: {
     title: "Shahsawaar Official",
     description: "Men's Jewellery & Accessories",

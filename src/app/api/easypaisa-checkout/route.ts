@@ -31,20 +31,20 @@ export async function POST(request: NextRequest) {
       storeId: STORE_ID,
       orderId: orderId,
       transactionAmount: amountInPaisa,
-      transactionType: 'MA', // Merchant Account
+      transactionType: 'CC', // changed from MA
       mobileAccountNo: customerPhone,
       emailAddress: customerEmail,
       tokenExpiry: expiryDateTime,
       bankIdentificationNumber: '',
       encryptedHashRequest: secureHash,
-      merchantPaymentMethod: '',
+      merchantPaymentMethod: 'CC_PAYMENT_METHOD',
       postBackURL: POST_BACK_URL,
       signature: '',
       transactionDateTime: transactionDateTime,
     };
     
     // EasyPaisa payment gateway URL (you'll get this from EasyPaisa)
-    const EASYPAISA_URL = process.env.EASYPAISA_PAYMENT_URL || 'https://easypaisa.com.pk/easypay';
+    const EASYPAISA_URL = process.env.EASYPAISA_PAYMENT_URL || 'https://easypay.easypaisa.com.pk/easypay/Index.jsf';
     
     return NextResponse.json({
       success: true,
