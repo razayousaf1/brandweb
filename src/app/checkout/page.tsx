@@ -117,8 +117,8 @@ export default function CheckoutPage() {
         router.push("/checkout/confirm");
         setTimeout(() => clearCart(), 100);
       } else {
-        // Credit Card Payment - Call Easypaisa API
-        const response = await fetch('/api/easypaisa-checkout', {
+        // ✅ Credit Card Payment - Call JazzCash API
+        const response = await fetch('/api/jazzcash-checkout', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -132,21 +132,21 @@ export default function CheckoutPage() {
         const data = await response.json();
 
         if (data.success) {
-          // Create form and auto-submit to Easypaisa
-          const easypaisaForm = document.createElement('form');
-          easypaisaForm.method = 'POST';
-          easypaisaForm.action = data.paymentUrl;
+          // Create form and auto-submit to JazzCash
+          const jazzcashForm = document.createElement('form');
+          jazzcashForm.method = 'POST';
+          jazzcashForm.action = data.paymentUrl;
 
           Object.entries(data.paymentData).forEach(([key, value]) => {
             const input = document.createElement('input');
             input.type = 'hidden';
             input.name = key;
             input.value = String(value);
-            easypaisaForm.appendChild(input);
+            jazzcashForm.appendChild(input);
           });
 
-          document.body.appendChild(easypaisaForm);
-          easypaisaForm.submit();
+          document.body.appendChild(jazzcashForm);
+          jazzcashForm.submit();
         } else {
           setError("Failed to initiate payment. Please try again.");
           setIsSubmitting(false);
